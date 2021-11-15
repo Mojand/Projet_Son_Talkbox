@@ -94,5 +94,5 @@ def reverse_temporal(audio_freq):
 
 audio, sr=load_vocal_audio('audio/voix.wav')
 audio_segm=segm_vocal_audio(audio,sr)
-apply_window(audio_segm[100],sr)
+print(audio_segm[50])
 
