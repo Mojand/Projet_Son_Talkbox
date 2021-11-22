@@ -23,7 +23,7 @@ def load_vocal_audio(audio_path):
 
     audio, sr = librosa.load(audio_path)
 
-    print("sr="+str(sr))
+    #print("sr="+str(sr))
 
     plt.figure(figsize=(14, 5))
     librosa.display.waveplot(audio , sr=sr)
@@ -53,10 +53,10 @@ def segm_vocal_audio(audio,sr):
     """
 
     nb_ech_segm=int(0.02*sr) #Un segment de 20ms correspond à 441 points.
-    print("taille_frames="+str(nb_ech_segm)) 
+    #print("taille_frames="+str(nb_ech_segm)) 
 
     frames=librosa.util.frame(audio,frame_length=nb_ech_segm,hop_length=nb_ech_segm,axis=0) #Le signal est divisé en 168 paquets
-    print("nb_frames="+str(frames.shape)) 
+    #print("nb_frames="+str(frames.shape)) 
 
     return frames,nb_ech_segm
 
