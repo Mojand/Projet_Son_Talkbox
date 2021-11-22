@@ -1,4 +1,3 @@
-
 import matplotlib.pyplot as plt
 import librosa.display
 import os
@@ -6,6 +5,8 @@ import numpy as np
 from scipy import signal
 import IPython.display as ipd
 import soundfile as sf
+import copy
+from LCP import filtre
 
 def load_vocal_audio(audio_path):
     """Load a vocal audio.
@@ -23,11 +24,12 @@ def load_vocal_audio(audio_path):
 
     audio, sr = librosa.load(audio_path)
 
-    #print("sr="+str(sr))
+    print("sr="+str(sr))
 
+    plt.figure(1)
     plt.figure(figsize=(14, 5))
     librosa.display.waveplot(audio , sr=sr)
-    #plt.show()
+    plt.show()
 
     return audio, sr 
 
@@ -40,7 +42,7 @@ def save_vocal_audio(audio,sr):
     sf.write("audio/pyaudio_output.wav", audio, sr)
 
 def segm_vocal_audio(audio,sr):
-    """Ségmenter un signal audio en segments de 20ms.
+    """Segmenter un signal audio en segments de 20ms.
 
     Args:
         audio (np.ndarray): the audio signal
@@ -52,13 +54,15 @@ def segm_vocal_audio(audio,sr):
 
     """
 
-    nb_ech_segm=int(0.02*sr) #Un segment de 20ms correspond à 441 points.
-    #print("taille_frames="+str(nb_ech_segm)) 
+    nb_ech_segm=int(0.02*sr) #Un segment de 20ms correspond a 441 points.
+    print("taille_frames="+str(nb_ech_segm)) 
+    nb_ech_mix=int(np.ceil(0.4*nb_ech_segm))
 
-    frames=librosa.util.frame(audio,frame_length=nb_ech_segm,hop_length=nb_ech_segm,axis=0) #Le signal est divisé en 168 paquets
-    #print("nb_frames="+str(frames.shape)) 
+    frames=librosa.util.frame(audio,frame_length=nb_ech_segm,hop_length=nb_ech_segm-nb_ech_mix,axis=0) #Le signal est divise en 168 paquets
+    #Pour l'overlap prendre au maximum la moitie de la frame (hop_length) par ex : (1-1/4)nb_ech_segm
+    print("nb_frames="+str(frames.shape)) 
 
-    return frames,nb_ech_segm
+    return frames,nb_ech_segm, nb_ech_mix
 
 
 
@@ -70,10 +74,11 @@ def apply_window(audio,nb_ech_segm):
         sr (float): The sample rate of the audio file
 
     Returns:
-        audio_window (np.ndarray) : la signal fenetré dans le domaine fréquentiel
+        audio_window (np.ndarray) : la signal fenetre dans le domaine frequentiel
 
     """
 
+    plt.figure(2)
     window=signal.windows.hamming(nb_ech_segm)
     plt.plot(window)
 
@@ -83,27 +88,81 @@ def apply_window(audio,nb_ech_segm):
 
 
 
-def concatenate(segm_audio) :
-    """Reconcaténer les trames de  20 ms en un signal vocal"""
-    return np.concatenate(segm_audio)
+def fenetre_rampe(nb_ech_segm,nb_ech_mix) :
+    """Reconcatener les trames de  20 ms en un signal vocal"""
+    fenetre=[]
+    for i in range (nb_ech_segm) :
+        if i in np.arange(nb_ech_mix):
+            fenetre.append(i/(nb_ech_mix-1))
+        elif i in range(nb_ech_segm-nb_ech_mix, nb_ech_segm):
+            fenetre.append(1-(i-(nb_ech_segm-nb_ech_mix))/(nb_ech_mix-1))
+        else :
+            fenetre.append(1)
+    
+    plt.figure(3)
+    plt.plot(fenetre)
+    plt.show()
+
+    return fenetre
+
+def concatenate(segms_audio, fenetre, nb_ech_mix):
+
+    audios_fenetre=[]
+    cpt=0
+    for i in segms_audio :
+        audios_fenetre.append(np.array(i)*np.array(fenetre))
+        audios_fenetre[cpt]=audios_fenetre[cpt].tolist()
+        cpt=cpt+1
+    plt.figure(4)
+    plt.plot(segms_audio[145])
+    plt.plot(audios_fenetre[145])
+    plt.plot((np.array(fenetre)*max(audios_fenetre[145])).tolist())
+    plt.plot((np.array(fenetre)*min(audios_fenetre[145])).tolist())
+    plt.show()
+
+    concatenation=audios_fenetre[0] 
+    #concatenation.append(audios_fenetre[0].tolist())
+    for i in range (1,len(audios_fenetre)) :
+        #Concatenation des rampes
+        for j in range (nb_ech_mix,1,-1):
+            concatenation[-j]=concatenation[-j]+audios_fenetre[i][nb_ech_mix-j] #len(concatenation)
+        #Le reste 
+        concatenation=concatenation+audios_fenetre[i][nb_ech_mix:]
+
+    plt.figure(5)
+    plt.plot(concatenation)
+    plt.show()
+
+    return concatenation
 
 
 ##################################################################
 
-#Chargement de l'audio
-audio, sr=load_vocal_audio('audio/voix.wav')
+#Chargement de l audio
+audio_voix, sr_voix=load_vocal_audio('audio/audio_tempetes.wav')
+audio_piano, sr_piano=load_vocal_audio('audio/piano.wav')
 
 #Segmentation en segments de 20ms
-audio_segm,nb_ech_segm=segm_vocal_audio(audio,sr)
+audio_segm_voix,nb_ech_segm_voix,nb_ech_mix_voix=segm_vocal_audio(audio_voix,sr_voix)
+audio_segm_piano,nb_ech_segm_piano,nb_ech_mix_piano=segm_vocal_audio(audio_piano,sr_piano)
 
 #Fenetre de Hamming
 audio_window=[]
-for i in range (len(audio_segm)) :
-    audio_window.append(apply_window(audio_segm[i],nb_ech_segm))
+if len(audio_segm_voix)>len(audio_segm_piano) :
+    minimum=len(audio_segm_piano)
+else :
+    minimum=len(audio_segm_voix)
+for i in range (minimum) :
+    audio_window.append(apply_window(audio_segm_voix[i],nb_ech_segm_voix))
+    #filtre
+    audio_filtre=filtre(audio_window[i],audio_segm_piano[i],12)
+
+#Calcul de la fenetre rampe
+fenetre=fenetre_rampe(nb_ech_segm_piano,nb_ech_mix_piano)
 
 #Concatenation des trames de 20ms
-audio_conc=concatenate(audio_window)
+audio_conc=concatenate(audio_filtre, fenetre, nb_ech_mix_piano)
 
-#Enregistrement du résultat obtenu
-save_vocal_audio(audio_conc,sr)
+#Enregistrement du resultat obtenu
+save_vocal_audio(audio_conc,sr_piano)
 

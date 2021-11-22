@@ -1,5 +1,5 @@
 import numpy as np
-from traitement_audio import *
+#from traitement_audio import *
 
 def autoCorrI(signal, i):
     
@@ -36,8 +36,11 @@ def vecteurR(signal, p):
     return vect 
 
 def matriceRInv(signal,p):
-
-    return np.linalg.inv(matriceR(signal = signal,p = p))
+    R0 = autoCorrI(signal,0)
+    if (R0!=0) :
+        return np.linalg.inv(matriceR(signal = signal,p = p))
+    else :
+        return np.zeros((p,p))
 
 def Durbin(vectR, p, R0):
 
@@ -54,6 +57,7 @@ def Durbin(vectR, p, R0):
 
         dot = np.dot(A0[0:i],vectTemp[0:i][:: -1])
         #print(dot)
+
 
         kp = (vectR[i] + dot)/rho
         #print(A0)
@@ -76,45 +80,47 @@ def LCP(signal, p):
     vectR = vecteurR(signal,p)
     R0 = autoCorrI(signal,0)
     #print(R0)
-    A = Durbin(vectR=vectR,p = p,R0 = R0)
+    if (R0!=0) :
+        A = Durbin(vectR=vectR,p = p,R0 = R0)
+    else :
+        A=np.zeros((p,1))
     
     return A
 
 def filtre(voix, instrument, p):
 
     estime = np.zeros(len(instrument))
-    A0 = LCP(signal=voix,p=p)
-
+    #A0 = LCP(signal=voix,p=p)
+    A0=np.dot(matriceRInv(signal=voix,p=p),vecteurR(signal=voix,p=p))
     for i in range(len(instrument)):
-        for j in range(1,p+1):
+        for j in range(1,p):
             if (i - j) > 0:
                 estime[i] += instrument[i-j]*A0[j]
     return estime
 
-if __name__ == '__main__':
+#if __name__ == '__main__':
 
-    #Chargement de l'audio
-    audio, sr=load_vocal_audio('audio/voix.wav')
+    # #Chargement de l'audio
+    # audio, sr=load_vocal_audio('audio/voix.wav')
 
-    #Segmentation en segments de 20ms
-    audio_segm,nb_ech_segm=segm_vocal_audio(audio,sr)
+    # #Segmentation en segments de 20ms
+    # audio_segm,nb_ech_segm=segm_vocal_audio(audio,sr)
 
-    #Fenetre de Hamming
-    audio_window=[]
-    for i in range (len(audio_segm)) :
-        audio_window.append(apply_window(audio_segm[i],nb_ech_segm))
+    # #Fenetre de Hamming
+    # audio_window=[]
+    # for i in range (len(audio_segm)) :
+    #     audio_window.append(apply_window(audio_segm[i],nb_ech_segm))
 
-    #Concatenation des trames de 20ms
-    audio_conc=concatenate(audio_window)
+    # #Concatenation des trames de 20ms
+    # audio_conc=concatenate(audio_window)
 
-    #Enregistrement du résultat obtenu
-    save_vocal_audio(audio_conc,sr)
+    # #Enregistrement du résultat obtenu
+    # save_vocal_audio(audio_conc,sr)
 
-    #print(len(audio_window))
-    #print(len(audio_segm[1]))
-    #print(vecteurR(audio_segm[1],12))
+    # #print(len(audio_window))
+    # #print(len(audio_segm[1]))
+    # #print(vecteurR(audio_segm[1],12))
     
-    print(np.dot(matriceRInv(audio_segm[1],12),vecteurR(audio_segm[1],12)))
+    # print(np.dot(matriceRInv(audio_segm[1],12),vecteurR(audio_segm[1],12)))
 
-    print(LCP(audio_segm[1],12))
-
+    # print(LCP(audio_segm[1],12))
