@@ -114,10 +114,10 @@ def concatenate(segms_audio, fenetre, nb_ech_mix):
         audios_fenetre[cpt]=audios_fenetre[cpt].tolist()
         cpt=cpt+1
     plt.figure(4)
-    plt.plot(segms_audio[145])
-    plt.plot(audios_fenetre[145])
-    plt.plot((np.array(fenetre)*max(audios_fenetre[145])).tolist())
-    plt.plot((np.array(fenetre)*min(audios_fenetre[145])).tolist())
+    plt.plot(segms_audio[450])
+    plt.plot(audios_fenetre[450])
+    plt.plot((np.array(fenetre)*max(audios_fenetre[450])).tolist())
+    plt.plot((np.array(fenetre)*min(audios_fenetre[450])).tolist())
     plt.show()
 
     concatenation=audios_fenetre[0] 
@@ -139,8 +139,15 @@ def concatenate(segms_audio, fenetre, nb_ech_mix):
 ##################################################################
 
 #Chargement de l audio
-audio_voix, sr_voix=load_vocal_audio('audio/audio_tempetes.wav')
+print(os.listdir('audio'))
+audio_voix, sr_voix=load_vocal_audio('audio/tempetes.wav')
 audio_piano, sr_piano=load_vocal_audio('audio/piano.wav')
+
+#On enlève le blanc au début du son du piano
+ind=0
+while(audio_piano[ind]<0.01):
+    ind=ind+1
+audio_piano = audio_piano[ind::]
 
 #Segmentation en segments de 20ms
 audio_segm_voix,nb_ech_segm_voix,nb_ech_mix_voix=segm_vocal_audio(audio_voix,sr_voix)
@@ -148,6 +155,8 @@ audio_segm_piano,nb_ech_segm_piano,nb_ech_mix_piano=segm_vocal_audio(audio_piano
 
 #Fenetre de Hamming
 audio_window=[]
+audio_filtre=[]
+
 if len(audio_segm_voix)>len(audio_segm_piano) :
     minimum=len(audio_segm_piano)
 else :
@@ -155,13 +164,18 @@ else :
 for i in range (minimum) :
     audio_window.append(apply_window(audio_segm_voix[i],nb_ech_segm_voix))
     #filtre
-    audio_filtre=filtre(audio_window[i],audio_segm_piano[i],12)
+    audio_filtre.append(filtre(audio_window[i],audio_segm_piano[i],9))
+    
 
 #Calcul de la fenetre rampe
 fenetre=fenetre_rampe(nb_ech_segm_piano,nb_ech_mix_piano)
 
 #Concatenation des trames de 20ms
 audio_conc=concatenate(audio_filtre, fenetre, nb_ech_mix_piano)
+
+plt.figure(6)
+plt.plot(audio_piano)
+plt.show()
 
 #Enregistrement du resultat obtenu
 save_vocal_audio(audio_conc,sr_piano)
