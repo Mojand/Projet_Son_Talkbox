@@ -10,14 +10,11 @@ from LCP import filtre
 
 def load_vocal_audio(audio_path):
     """Load a vocal audio.
-
     Args:
         audio_path (str): path to audio file
-
     Returns:
         audio (np.ndarray): the audio signal
         sr (float): The sample rate of the audio file
-
     """
     if not os.path.exists(audio_path):
         raise IOError("audio_path {} does not exist".format(audio_path))
@@ -25,11 +22,6 @@ def load_vocal_audio(audio_path):
     audio, sr = librosa.load(audio_path)
 
     print("sr="+str(sr))
-
-    plt.figure(1)
-    plt.figure(figsize=(14, 5))
-    librosa.display.waveplot(audio , sr=sr)
-    plt.show()
 
     return audio, sr 
 
@@ -43,15 +35,12 @@ def save_vocal_audio(audio,sr):
 
 def segm_vocal_audio(audio,sr):
     """Segmenter un signal audio en segments de 20ms.
-
     Args:
         audio (np.ndarray): the audio signal
         sr (float): The sample rate of the audio file
-
     Returns:
         frames (np.ndarray) : les segments de 20ms du signal audio
         nb_ech_segm : nombre d'echantillons par segment de 20ms
-
     """
 
     nb_ech_segm=int(0.02*sr) #Un segment de 20ms correspond a 441 points.
@@ -68,19 +57,18 @@ def segm_vocal_audio(audio,sr):
 
 def apply_window(audio,nb_ech_segm):
     """Fenetrage du signal audio.
-
     Args:
         audio (np.ndarray): the audio signal
         sr (float): The sample rate of the audio file
-
     Returns:
         audio_window (np.ndarray) : la signal fenetre dans le domaine frequentiel
-
     """
 
-    plt.figure(2)
+    # plt.figure(2)
     window=signal.windows.hamming(nb_ech_segm)
-    plt.plot(window)
+    # plt.plot(window)
+    # plt.title("Fenetre de Hamming")
+    # plt.show()
 
     audio_window=[a*w for a,w in zip(audio,window)]
 
@@ -101,6 +89,7 @@ def fenetre_rampe(nb_ech_segm,nb_ech_mix) :
     
     plt.figure(3)
     plt.plot(fenetre)
+    plt.title("Rampe")
     plt.show()
 
     return fenetre
@@ -118,6 +107,9 @@ def concatenate(segms_audio, fenetre, nb_ech_mix):
     plt.plot(audios_fenetre[450])
     plt.plot((np.array(fenetre)*max(audios_fenetre[450])).tolist())
     plt.plot((np.array(fenetre)*min(audios_fenetre[450])).tolist())
+    plt.xlabel('Echantillons')
+    plt.ylabel('Amplitude')
+    plt.title('Trame soumis à une rampe pour la concaténation')
     plt.show()
 
     concatenation=audios_fenetre[0] 
@@ -131,6 +123,7 @@ def concatenate(segms_audio, fenetre, nb_ech_mix):
 
     plt.figure(5)
     plt.plot(concatenation)
+    plt.title("Signal de sortie")
     plt.show()
 
     return concatenation
@@ -142,6 +135,19 @@ def concatenate(segms_audio, fenetre, nb_ech_mix):
 print(os.listdir('audio'))
 audio_voix, sr_voix=load_vocal_audio('audio/tempetes.wav')
 audio_piano, sr_piano=load_vocal_audio('audio/piano.wav')
+
+#plt.figure(1)
+plt.figure(1,figsize=(14, 5))
+plt.subplot(1,2,1)
+plt.plot(audio_voix)
+plt.ylabel("Amplitude")
+plt.xlabel("Echantillons")
+plt.title("Signal de la voix")
+plt.subplot(1,2,2)
+plt.plot(audio_piano)
+plt.title("Signal du piano")
+plt.xlabel("Echantillons")
+plt.show()
 
 #On enlève le blanc au début du son du piano
 ind=0
@@ -173,10 +179,7 @@ fenetre=fenetre_rampe(nb_ech_segm_piano,nb_ech_mix_piano)
 #Concatenation des trames de 20ms
 audio_conc=concatenate(audio_filtre, fenetre, nb_ech_mix_piano)
 
-plt.figure(6)
-plt.plot(audio_piano)
-plt.show()
+
 
 #Enregistrement du resultat obtenu
 save_vocal_audio(audio_conc,sr_piano)
-
