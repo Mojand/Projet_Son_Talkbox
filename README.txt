@@ -9,6 +9,7 @@ Des arguments peuvent être ajoutés afin de choisir :
 	- la méthode de résolution des coefficients du filtre par LPC
 	- l'ordre du filtre
 	- l'ajout d'une pré-amplification (filtre dérivateur) si derive = True
+	- l'affichage ou non des graphiques
 La commande suivante permet de connaître les arguments à passer au script python.
 	python3 traitement_audio.py --help
 
