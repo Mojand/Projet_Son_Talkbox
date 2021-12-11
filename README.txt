@@ -1,6 +1,10 @@
 Bienvenue dans le projet Création d'une Talkbox numérique
 
 Pour lancer le programme, effectuez la commande suivante :
+
+Etape 1 :
+	python3 etape1.py
+Etape 2 :
 	python3 traitement_audio.py
 
 Des arguments peuvent être ajoutés afin de choisir :

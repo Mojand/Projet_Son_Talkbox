@@ -52,7 +52,7 @@ def segm_vocal_audio(audio,sr):
 
     nb_ech_segm=int(0.02*sr) #Un segment de 20ms correspond a 441 points.
     print("taille_frames="+str(nb_ech_segm)) 
-    nb_ech_mix=int(np.ceil(0.5*nb_ech_segm))
+    nb_ech_mix=int(np.ceil(0.25*nb_ech_segm))
 
     frames=librosa.util.frame(audio,frame_length=nb_ech_segm,hop_length=nb_ech_segm-nb_ech_mix,axis=0) #Le signal est divise en 168 paquets
     #Pour l'overlap prendre au maximum la moitie de la frame (hop_length) par ex : (1-1/4)nb_ech_segm
@@ -98,6 +98,8 @@ def fenetre_rampe(nb_ech_segm,nb_ech_mix, display) :
     if display == "True" :
         plt.figure(3)
         plt.plot(fenetre)
+        plt.xlabel('Echantillons')
+        plt.ylabel('Gain')
         plt.title("Rampe")
         plt.show()
 
@@ -122,7 +124,7 @@ def concatenate(segms_audio, fenetre, nb_ech_mix, display):
         plt.plot((np.array(fenetre)*min(audios_fenetre[int(len(segms_audio)/2)])).tolist())
         plt.xlabel('Echantillons')
         plt.ylabel('Amplitude')
-        plt.title('Trame soumis à une rampe pour la concaténation')
+        plt.title('Trame soumise à une rampe pour la concaténation')
         plt.show()
     
     concatenation=audios_fenetre[0] 
