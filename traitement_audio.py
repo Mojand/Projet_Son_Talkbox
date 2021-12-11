@@ -25,11 +25,11 @@ def save_vocal_audio(audio,sr):
     """Sauvegarder un fichier audio"""
     sf.write("audio/pyaudio_output.wav", audio, sr)
 
-def segm_vocal_audio(audio,sr):
+def segm_vocal_audio(audio,sr, recouvre):
     """Segmenter un signal audio en segments de 20ms."""
 
     nb_ech_segm=int(0.02*sr) #Un segment de 20ms correspond a 441 points.
-    nb_ech_mix=int(np.ceil(0.25*nb_ech_segm))
+    nb_ech_mix=int(np.ceil(recouvre*nb_ech_segm))
 
     frames=librosa.util.frame(audio,frame_length=nb_ech_segm,hop_length=nb_ech_segm-nb_ech_mix,axis=0) #Le signal est divise en 168 paquets
     #Pour l'overlap prendre au maximum la moitie de la frame (hop_length) par ex : (1-1/4)nb_ech_segm
@@ -122,6 +122,7 @@ if __name__ == '__main__':
     parser.add_argument('-ordre', nargs='?', type=int, default=10,  help='ordre du filtre')
     parser.add_argument('-derive', nargs='?', type=str, default="True",  help='ajout d un filtre de pre-accentuation (dérivateur) si derive = True')
     parser.add_argument('-display', nargs='?', type=str, default="True",  help='affichage des graphiques si display=True')
+    parser.add_argument('-recouvrement', nargs='?', type=float, default="0.25",  help='recouvrement entre deux trames de 20 ms successives. Valeur entre 0 et 1')
     args = parser.parse_args()
 
     #Chargement de l audio
@@ -141,8 +142,8 @@ if __name__ == '__main__':
 
     #Segmentation en segments de 20ms
     print("Segmentation des signaux audio en trames de 20 ms")
-    audio_segm_voix,nb_ech_segm_voix,nb_ech_mix_voix=segm_vocal_audio(audio_voix,sr_voix)
-    audio_segm_piano,nb_ech_segm_piano,nb_ech_mix_piano=segm_vocal_audio(audio_piano,sr_piano)
+    audio_segm_voix,nb_ech_segm_voix,nb_ech_mix_voix=segm_vocal_audio(audio_voix,sr_voix, args.recouvrement)
+    audio_segm_piano,nb_ech_segm_piano,nb_ech_mix_piano=segm_vocal_audio(audio_piano,sr_piano, args.recouvrement)
 
     
     audio_window=[]

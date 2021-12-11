@@ -14,6 +14,7 @@ Des arguments peuvent être ajoutés afin de choisir :
 	- l'ordre du filtre
 	- l'ajout d'une pré-amplification (filtre dérivateur) si derive = True
 	- l'affichage ou non des graphiques
+	- le pourcentage de recouvrement entre les différentes trames
 La commande suivante permet de connaître les arguments à passer au script python.
 	python3 traitement_audio.py --help
 
