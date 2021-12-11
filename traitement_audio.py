@@ -6,7 +6,8 @@ from scipy import signal
 import IPython.display as ipd
 import soundfile as sf
 import copy
-from LCP import filtre
+from LPC import filtre
+import argparse
 
 def load_vocal_audio(audio_path):
     """Load a vocal audio.
@@ -25,12 +26,7 @@ def load_vocal_audio(audio_path):
     audio, sr = librosa.load(audio_path)
 
     print("sr="+str(sr))
-    """
-    plt.figure(1)
-    plt.figure(figsize=(14, 5))
-    librosa.display.waveplot(audio , sr=sr)
-    plt.show()
-    """
+    
     return audio, sr 
 
 def read_vocal_audio(audio,sr):
@@ -78,13 +74,10 @@ def apply_window(audio,nb_ech_segm):
 
     """
 
-    plt.figure(2)
     window=signal.windows.hamming(nb_ech_segm)
-    plt.plot(window)
 
     audio_window = np.zeros((len(window),1))
 
-    #audio_window=np.array(a*w for a,w in zip(audio,window))
     for i in range(len(window)):
         audio_window[i] = audio[i]*window[i]
 
@@ -92,7 +85,7 @@ def apply_window(audio,nb_ech_segm):
 
 
 
-def fenetre_rampe(nb_ech_segm,nb_ech_mix) :
+def fenetre_rampe(nb_ech_segm,nb_ech_mix, display) :
     """Reconcatener les trames de  20 ms en un signal vocal"""
     fenetre=[]
     for i in range (nb_ech_segm) :
@@ -102,14 +95,15 @@ def fenetre_rampe(nb_ech_segm,nb_ech_mix) :
             fenetre.append(1-(i-(nb_ech_segm-nb_ech_mix))/(nb_ech_mix-1))
         else :
             fenetre.append(1)
-    
-    plt.figure(3)
-    plt.plot(fenetre)
-    plt.show()
+    if display == "True" :
+        plt.figure(3)
+        plt.plot(fenetre)
+        plt.title("Rampe")
+        plt.show()
 
     return fenetre
 
-def concatenate(segms_audio, fenetre, nb_ech_mix):
+def concatenate(segms_audio, fenetre, nb_ech_mix, display):
 
     audios_fenetre=[]
     cpt=0
@@ -117,14 +111,20 @@ def concatenate(segms_audio, fenetre, nb_ech_mix):
         audios_fenetre.append(np.array(i)*np.array(fenetre))
         audios_fenetre[cpt]=audios_fenetre[cpt].tolist()
         cpt=cpt+1
-    """
-    plt.figure(4)
-    plt.plot(segms_audio[450])
-    plt.plot(audios_fenetre[450])
-    plt.plot((np.array(fenetre)*max(audios_fenetre[450])).tolist())
-    plt.plot((np.array(fenetre)*min(audios_fenetre[450])).tolist())
-    plt.show()
-    """
+
+    print()
+    
+    if display=="True" :
+        plt.figure(4)
+        plt.plot(segms_audio[int(len(segms_audio)/2)])
+        plt.plot(audios_fenetre[int(len(segms_audio)/2)])
+        plt.plot((np.array(fenetre)*max(audios_fenetre[int(len(segms_audio)/2)])).tolist())
+        plt.plot((np.array(fenetre)*min(audios_fenetre[int(len(segms_audio)/2)])).tolist())
+        plt.xlabel('Echantillons')
+        plt.ylabel('Amplitude')
+        plt.title('Trame soumis à une rampe pour la concaténation')
+        plt.show()
+    
     concatenation=audios_fenetre[0] 
     #concatenation.append(audios_fenetre[0].tolist())
     for i in range (1,len(audios_fenetre)) :
@@ -134,64 +134,82 @@ def concatenate(segms_audio, fenetre, nb_ech_mix):
         #Le reste 
         concatenation=concatenation+audios_fenetre[i][nb_ech_mix:]
 
-    plt.figure(5)
-    plt.plot(concatenation)
-    plt.show()
+    if display=="True" :
+        plt.figure(5)
+        plt.plot(concatenation)
+        plt.title("Signal de sortie")
+        plt.show()
 
     return concatenation
 
 
 ##################################################################
 
-#Chargement de l audio
-print(os.listdir('audio'))
-audio_voix, sr_voix=load_vocal_audio('audio/tempetes.wav')
-audio_piano, sr_piano=load_vocal_audio('audio/bruit_blanc.wav')
+if __name__ == '__main__':
 
-#On enlève le blanc au début du son du piano
-ind=0
-while(audio_piano[ind]<0.01):
-    ind=ind+1
-audio_piano = audio_piano[ind::]
+    parser = argparse.ArgumentParser( usage=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    parser.add_argument('-methode', nargs='?', type=str, default='Durbin',  help='methode de determination des coefficients : Durbin ou Rinverse')
+    parser.add_argument('-audio', nargs='?', type=str, default='audio/tempetes.wav',  help='chemin du fichier de parole à partir du répertoire courant')
+    parser.add_argument('-instrument', nargs='?', type=str, default="audio/bruit_blanc.wav", help='chemin du fichier d instrument à partir du répertoire courant')
+    parser.add_argument('-ordre', nargs='?', type=int, default=10,  help='ordre du filtre')
+    parser.add_argument('-derive', nargs='?', type=str, default="True",  help='ajout d un filtre de pre-accentuation (dérivateur) si derive = True')
+    parser.add_argument('-display', nargs='?', type=str, default="True",  help='affichage des graphiques si display=True')
+    args = parser.parse_args()
 
-#Segmentation en segments de 20ms
-audio_segm_voix,nb_ech_segm_voix,nb_ech_mix_voix=segm_vocal_audio(audio_voix,sr_voix)
-audio_segm_piano,nb_ech_segm_piano,nb_ech_mix_piano=segm_vocal_audio(audio_piano,sr_piano)
+    #Chargement de l audio
+    audio_voix, sr_voix=load_vocal_audio(args.audio)
+    if args.derive == "True" :
+        for i in range(1,len(audio_voix)) :
+            audio_voix[i] = audio_voix[i] - audio_voix[i-1]
+    audio_piano, sr_piano=load_vocal_audio(args.instrument)
 
-#Fenetre de Hamming
-audio_window=[]
-audio_filtre=[]
-audio_filtre2=[]
+    #On enlève le blanc au début du son du piano
+    ind=0
+    while(audio_piano[ind]<0.01):
+        ind=ind+1
+    audio_piano = audio_piano[ind::]
 
-if len(audio_segm_voix)>len(audio_segm_piano) :
-    minimum=len(audio_segm_piano)
-else :
-    minimum=len(audio_segm_voix)
-for i in range (minimum) :
-    audio_window.append(apply_window(audio_segm_voix[i],nb_ech_segm_voix))
-    #filtre
-    print("offset = ",i*0.02, "i=",i)
-    #y, sr = librosa.load('audio/tempetes.wav', duration=0.020, offset=i*0.020, sr=sr_piano)
-    audio_filtre.append(filtre(audio_window[i],audio_segm_piano[i],20))
-    #audio_filtre2.append(filtre(y,audio_segm_piano[i],20))
-    
+    #Segmentation en segments de 20ms
+    audio_segm_voix,nb_ech_segm_voix,nb_ech_mix_voix=segm_vocal_audio(audio_voix,sr_voix)
+    audio_segm_piano,nb_ech_segm_piano,nb_ech_mix_piano=segm_vocal_audio(audio_piano,sr_piano)
 
-#Calcul de la fenetre rampe
-fenetre=fenetre_rampe(nb_ech_segm_piano,nb_ech_mix_piano)
+    #Fenetre de Hamming
+    audio_window=[]
+    audio_filtre=[]
+    audio_filtre2=[]
 
-#Concatenation des trames de 20ms
-audio_conc=concatenate(audio_filtre, fenetre, nb_ech_mix_piano)
+    if len(audio_segm_voix)>len(audio_segm_piano) :
+        minimum=len(audio_segm_piano)
+    else :
+        minimum=len(audio_segm_voix)
+    for i in range (minimum) :
+        audio_window.append(apply_window(audio_segm_voix[i],nb_ech_segm_voix))
+        #filtrage
+        audio_filtre.append(filtre(audio_window[i],audio_segm_piano[i],args.ordre,args.methode))
 
-# concat_test=np.zeros(len(audio_filtre2[0])*len(audio_filtre2))
-# print(concat_test.shape)
-# for i in range(len(audio_filtre2)):
-#     concat_test[i*len(audio_filtre2[0]):(i+1)*len(audio_filtre2[0])] = audio_filtre2[i]
+    #Calcul de la fenetre rampe
+    fenetre=fenetre_rampe(nb_ech_segm_piano,nb_ech_mix_piano, args.display)
 
-plt.figure(6)
-plt.plot(audio_piano)
-plt.show()
+    #Concatenation des trames de 20ms
+    audio_conc=concatenate(audio_filtre, fenetre, nb_ech_mix_piano, args.display)
 
-#Enregistrement du resultat obtenu
-save_vocal_audio(audio_conc,sr_piano)
-#sf.write("audio/pyaudio_output_test_sans_fenetrage.wav", concat_test, sr_piano)
+    audio_conc = np.array(audio_conc)
+
+    # Comparaison des spectres
+    specVoix = np.abs(librosa.stft(audio_voix[sr_voix:sr_voix*5]))
+    specInstru = np.abs(librosa.stft(audio_piano[sr_piano:sr_piano*5]))
+    specFiltre = np.abs(librosa.stft(audio_conc[sr_piano:sr_piano*5]))
+
+    if args.display == "True" :
+        fig, ax = plt.subplots(nrows=3, ncols=1, sharex=True)
+        librosa.display.specshow(librosa.amplitude_to_db(specVoix, ref=np.max),y_axis='log', x_axis='time', ax=ax[0])
+        plt.title('spectre de la voix')
+        librosa.display.specshow(librosa.amplitude_to_db(specInstru, ref=np.max),y_axis='log', x_axis='time', ax=ax[1])
+        plt.title('spectre de l instrument')
+        librosa.display.specshow(librosa.amplitude_to_db(specFiltre, ref=np.max),y_axis='log', x_axis='time', ax=ax[2])
+        plt.title('spectre de l instrument filtré')
+        plt.show()
+
+    #Enregistrement du resultat obtenu
+    save_vocal_audio(audio_conc,sr_piano)
 
