@@ -1,4 +1,11 @@
+HINGREZ Alexandre - KAMACHE Mohand - LESTROHAN Céline -THEUNISSEN Mathilde
+
 Bienvenue dans le projet Création d'une Talkbox numérique
+
+Nous avions utilisé un autre git que celui que vous aviez créer.
+Si vous souhaitez voir notre git afin d'évaluer l'avancement du projet, voici le lien :
+
+https://github.com/Mojand/Projet_Son_Talkbox.git
 
 Pour lancer le programme, effectuez la commande suivante :
 
@@ -21,7 +28,4 @@ La commande suivante permet de connaître les arguments à passer au script pyth
 Une fois le signal de l'instrument filtré, il est possible de l'écouter.
 La piste audio se trouve dans le dossier audio sous le nom pyaudio_output.wav
 
-Nous avions utilisé un autre git que celui que vous aviez créer.
-Si vous souhaitez voir notre git afin d'évaluer l'avancement du projet, voici le lien :
 
-https://github.com/Mojand/Projet_Son_Talkbox.git
