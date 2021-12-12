@@ -131,19 +131,19 @@ if __name__ == '__main__':
     if args.derive == "True" :
         for i in range(1,len(audio_voix)) :
             audio_voix[i] = audio_voix[i] - audio_voix[i-1]
-    audio_piano, sr_piano=load_vocal_audio(args.instrument)
+    audio_instru, sr_instru=load_vocal_audio(args.instrument)
 
     #On enlève le blanc au début du son du piano
     ind=0
-    while(audio_piano[ind]<0.01):
+    while(audio_instru[ind]<0.01):
         ind=ind+1
-    audio_piano = audio_piano[ind::]
+    audio_instru = audio_instru[ind::]
 
 
     #Segmentation en segments de 20ms
     print("Segmentation des signaux audio en trames de 20 ms")
     audio_segm_voix,nb_ech_segm_voix,nb_ech_mix_voix=segm_vocal_audio(audio_voix,sr_voix, args.recouvrement)
-    audio_segm_piano,nb_ech_segm_piano,nb_ech_mix_piano=segm_vocal_audio(audio_piano,sr_piano, args.recouvrement)
+    audio_segm_piano,nb_ech_segm_piano,nb_ech_mix_piano=segm_vocal_audio(audio_instru,sr_instru, args.recouvrement)
 
     
     audio_window=[]
@@ -176,8 +176,8 @@ if __name__ == '__main__':
 
     # Comparaison des spectres
     specVoix = np.abs(librosa.stft(audio_voix[sr_voix:sr_voix*5]))
-    specInstru = np.abs(librosa.stft(audio_piano[sr_piano:sr_piano*5]))
-    specFiltre = np.abs(librosa.stft(audio_conc[sr_piano:sr_piano*5]))
+    specInstru = np.abs(librosa.stft(audio_instru[sr_instru:sr_instru*5]))
+    specFiltre = np.abs(librosa.stft(audio_conc[sr_instru:sr_instru*5]))
 
     if args.display == "True" :
         fig, ax = plt.subplots(nrows=3, ncols=1, sharex=True)
@@ -191,5 +191,5 @@ if __name__ == '__main__':
 
     #Enregistrement du resultat obtenu
     print("Enregistrement du signal obtenu : signal modelisant le TalkBox")
-    save_vocal_audio(audio_conc,sr_piano)
+    save_vocal_audio(audio_conc,sr_instru)
 

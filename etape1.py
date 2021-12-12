@@ -11,22 +11,25 @@ import soundfile as sf
 import copy
 from LPC import filtre
 
+from traitement_audio import apply_window
+
 audio_bruit, sr1=load('audio/bruit_blanc.wav')
 audio_voix, sr2=load('audio/A.wav')
 
 # on enlève les zeros
-print((len(audio_voix)/2)/sr2)
 y, sr = librosa.load('audio/A.wav', duration=0.020, offset=1, sr=sr2)
+
+y = np.squeeze(apply_window(y,len(y)))
 
 #recherche des paramètres du filtre sur ce signal
 # lpc de librosa
-# A0 = lpc(y, 10)
+A0 = lpc(y, 10)
 
-# a = np.hstack([[1], 1 * A0[1:]])
-# print("a = ", a)
-# bruit_filtre = lfilter([1], a, audio_bruit)
+a = np.hstack([[1], 1 * A0[1:]])
+print("a = ", a)
+bruit_filtre = lfilter([1], a, audio_bruit)
 
-bruit_filtre = filtre(audio_voix,audio_bruit,10,"Durbin") #"Durbin" ou "Rinverse"
+#bruit_filtre = filtre(audio_voix,audio_bruit,10,"Durbin") #"Durbin" ou "Rinverse"
 
 plt.figure(1)
 plt.plot(bruit_filtre)
