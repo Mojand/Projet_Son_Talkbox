@@ -157,7 +157,7 @@ if __name__ == '__main__':
         minimum=len(audio_segm_voix)
 
 
-    print("Filtrage LCP")
+    print("Filtrage LPC")
     for i in range (minimum) :
         #Fenetre de Hamming
         audio_window.append(apply_window(audio_segm_voix[i],nb_ech_segm_voix))
@@ -172,6 +172,7 @@ if __name__ == '__main__':
     audio_conc=concatenate(audio_filtre, fenetre, nb_ech_mix_piano, args.display)
 
     audio_conc = np.array(audio_conc)
+
 
     # Comparaison des spectres
     specVoix = np.abs(librosa.stft(audio_voix[sr_voix:sr_voix*5]))
